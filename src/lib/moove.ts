@@ -81,6 +81,36 @@ export interface PaginatedPaymentLinks {
   nextOffset: number | null;
 }
 
+export interface UserWalletData {
+  walletAddress: string;
+  token: { id: string; token: TokenData };
+  provider: string;
+  chainType: ChainData["chainType"];
+  isDefault: boolean;
+  isChainDefault: boolean;
+  wallets: unknown[] | null;
+}
+
+export interface UserData {
+  id: string;
+  handle: string;
+  username: string;
+  dateCreated: string;
+  bio: string | null;
+  profileImage: string | null;
+  backgroundImage: string | null;
+  backgroundColour: string | null;
+  links: unknown[];
+  isMooveUser: boolean;
+  contact: unknown | null;
+  badges: unknown | null;
+  wallet: UserWalletData;
+}
+
+export interface PaymentLinkDetail extends PaymentLinkData {
+  user: UserData;
+}
+
 function getApiKey(): string {
   const apiKey = process.env.MOOVE_API_KEY;
   if (!apiKey) {
@@ -132,4 +162,20 @@ export function listPaymentLinks(params?: {
   return mooveFetch<PaginatedPaymentLinks>(
     `/v1/payment-link${queryString ? `?${queryString}` : ""}`,
   );
+}
+
+/** Public endpoint, no API key required — safe to call from anywhere a payer might land. */
+export async function getPaymentLink(id: string): Promise<PaymentLinkDetail> {
+  const response = await fetch(
+    `${MOOVE_API_BASE}/v1/payment-link/${encodeURIComponent(id)}`,
+  );
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({
+      errors: [{ message: response.statusText, code: "unknown" }],
+    }))) as ApiErrorResponse;
+    throw new MooveApiError(response.status, body);
+  }
+
+  return response.json() as Promise<PaymentLinkDetail>;
 }
