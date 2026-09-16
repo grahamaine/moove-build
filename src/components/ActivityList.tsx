@@ -1,75 +1,71 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { PaymentLinkData } from "@/lib/moove";
 
 const statusStyle: Record<PaymentLinkData["status"], string> = {
-  active: "text-emerald-600 dark:text-emerald-400",
-  completed: "text-zinc-500 dark:text-zinc-400",
-  inactive: "text-red-600 dark:text-red-400",
+  active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  completed: "bg-[var(--surface-2)] text-[var(--muted)]",
+  inactive: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
-export function ActivityList({ refreshKey }: { refreshKey: number }) {
-  const [items, setItems] = useState<PaymentLinkData[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/payment-link")
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) {
-          throw new Error(body.errors?.[0]?.message ?? "Request failed");
-        }
-        return body as { data: PaymentLinkData[] };
-      })
-      .then((body) => {
-        if (!cancelled) {
-          setItems(body.data);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError((err as Error).message);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
+export function ActivityList({
+  items,
+  error,
+  search,
+}: {
+  items: PaymentLinkData[] | null;
+  error: string | null;
+  search: string;
+}) {
+  const filtered = items?.filter((link) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      link.description?.toLowerCase().includes(q) ||
+      link.token.symbol.toLowerCase().includes(q) ||
+      link.toAmount.toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <section className="rounded-xl border border-black/[.08] p-6 dark:border-white/[.145]">
-      <h3 className="font-semibold text-black dark:text-zinc-50">Activity</h3>
+    <section className="card-hover animate-fade-in-up rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+      <h3 className="font-semibold text-[var(--foreground)]">Activity</h3>
       {error ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+        <p className="mt-2 text-sm text-red-500">
           Could not load payment links: {error}
         </p>
       ) : items === null ? (
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          Loading…
-        </p>
-      ) : items.length === 0 ? (
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          No payment links yet — create one above.
+        <p className="mt-2 text-sm text-[var(--muted)]">Loading…</p>
+      ) : filtered && filtered.length === 0 ? (
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          {search.trim()
+            ? "No payment links match your search."
+            : "No payment links yet — create one above."}
         </p>
       ) : (
-        <ul className="mt-4 flex flex-col gap-3">
-          {items.map((link) => (
+        <ul className="mt-4 flex flex-col divide-y divide-[var(--border)]">
+          {filtered?.map((link, i) => (
             <li
               key={link.id}
-              className="flex items-center justify-between gap-3 text-sm"
+              className="animate-fade-in-up flex items-center justify-between gap-3 py-3 text-sm first:pt-0 last:pb-0"
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
             >
               <div className="min-w-0">
-                <p className="truncate text-black dark:text-zinc-50">
+                <p className="truncate font-medium text-[var(--foreground)]">
                   {link.toAmount} {link.token.symbol}
                   {link.description ? ` — ${link.description}` : ""}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-[var(--muted)]">
                   {new Date(link.dateCreated).toLocaleString()}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                <span className={statusStyle[link.status]}>
+                <span
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle[link.status]}`}
+                >
+                  {link.status === "active" && (
+                    <span className="animate-pulse-dot h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  )}
                   {link.status}
                 </span>
                 {link.transactionUrl ? (
@@ -77,7 +73,7 @@ export function ActivityList({ refreshKey }: { refreshKey: number }) {
                     href={link.transactionUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline text-zinc-500 dark:text-zinc-400"
+                    className="text-[var(--muted)] underline hover:text-[var(--accent-2)]"
                   >
                     view tx
                   </a>
@@ -86,7 +82,7 @@ export function ActivityList({ refreshKey }: { refreshKey: number }) {
                     href={link.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline text-zinc-500 dark:text-zinc-400"
+                    className="text-[var(--muted)] underline hover:text-[var(--accent-2)]"
                   >
                     open
                   </a>

@@ -1,18 +1,30 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+"use client";
+
+import { useState } from "react";
+import { useAccount } from "wagmi";
+import { Sidebar } from "@/components/Sidebar";
+import { TopBar } from "@/components/TopBar";
+import { Hero } from "@/components/Hero";
 import { Dashboard } from "@/components/Dashboard";
+import { Footer } from "@/components/Footer";
 
 export default function Home() {
+  const { isConnected } = useAccount();
+  const [search, setSearch] = useState("");
+
   return (
-    <div className="flex flex-1 flex-col items-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-16 sm:px-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            Moove Build
-          </h1>
-          <ConnectButton />
-        </div>
-        <Dashboard />
-      </main>
+    <div className="flex min-h-full flex-1">
+      <Sidebar />
+      <div className="flex min-h-full flex-1 flex-col">
+        <TopBar search={search} onSearchChange={setSearch} />
+        <main
+          id="top"
+          className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8"
+        >
+          {isConnected ? <Dashboard search={search} /> : <Hero />}
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }
